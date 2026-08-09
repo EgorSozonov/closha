@@ -1,8 +1,8 @@
 ** UNDER CONSTRUCTION **
 
-### Saveera
+### Closha
 
-Saveera  is a script for local-only backups.
+Closha is a script for local-only backups.
 
 Features:
 
@@ -14,32 +14,32 @@ Features:
 
 - configuring how many last versions of a backup to keep;
 
-- autoreplicating to plugged in USB sticks that have a "saveera" directory in root;
+- autoreplicating to plugged in USB sticks that have a "closha" directory in root;
 
 - a compact, well-commented pure Bash implementation that is easy to audit: no foul play going on.
 
 All of that without registration, cloud fees, AI, leaking your data to corporations or age 
 verification!
 
-Create one or more files in ~/.config/saveera with the following structure:
+Create one or more files in ~/.config/closha with the following structure:
 
 
 > output = ~/backups
+
 > keepVersions = 4
-> inputCommand = tar -I 'xz 9' --exclude .git -c \
->    ~/repos/myRepo -f ~/.local/share/saveera/myRepo.tar.xz
-> inputResult = ~/.local/share/saveera/myRepo.tar.xz
+
+> input = ~/path/to/file
  
 
 Place the script within your path and run it. The script will run the command you've written in 
 `inputCommand` and expect the file you've named in `inputResult`; this file will be moved to
 something like 
 
-    ~/backups/myRepo.tar.xz.123.bak
+    ~/backups/file.tar.xz.123.bak
 
 its SHA-256 checksum will be saved as 
 
-    ~/backups/myRepo.tar.xz.123.sha256
+    ~/backups/file.tar.xz.123.sha256
 
 and an older backup myRepo.tar.xz.119.{bak,sha256}, if it exists, will be deleted. The id is an 
 ever-incrementing integer starting at 0.
@@ -50,20 +50,32 @@ and avoids superfluous overwriting if that's true. All outputs are checked separ
 You can have multiple inputs and multiple outputs (each input will be backed up to every output).
 You can also have multiple config files and they will all be executed.
 
-To copy an already-existing file, use ":" as the command (it does nothing).
+To have a generated input (for example, when you need to compress a dir and/or encrypt something),
+use the "inputCommand" + "inputResult" combo:
+
+> output = ~/backups
+
+> keepVersions = 4
+
+> inputCommand = tar -I 'xz 9' --exclude .git -c \
+
+>    ~/repos/myRepo -f ~/.local/share/closha/myRepo.tar.xz
+
+> inputResult = ~/.local/share/closha/myRepo.tar.xz
+
 
 To restore a backup, run it as 
 
-   saveera.sh ~/backups/myRepo.tar.xz.123.bak
+   closha.sh ~/backups/myRepo.tar.xz.123.bak
    
 And it will validate the checksum and copy that file to  
 
-    ~/.local/share/saveera/myRepo.tar.xz
+    ~/.local/share/closha/myRepo.tar.xz
     
 (the same place it got it from when making the backup).
 
 But the most beautiful feature is auto backing up to plugged in USB sticks. Just create the dir
-"saveera" at the toplevel of your stick and plug it in (no need to mount!). Better yet, have 3 or
+"closha" at the toplevel of your stick and plug it in (no need to mount!). Better yet, have 3 or
 more of such USB sticks plugged in. The script will auto-mount them, check for presence of the dir
 and back up all inputs to all of the sticks simultaneously. This will be a simple RAID array for 
 your data to ensure its integrity, all with just one command.
@@ -71,9 +83,9 @@ your data to ensure its integrity, all with just one command.
 
 ### Examples
 
-Look in the docs/examples directory for examples of config files. These go into ~/.config/saveera.
+Look in the docs/examples directory for examples of config files. These go into ~/.config/closha.
 
 
 ### Name
 
-Named after a word play on the verb "to save" and Bagheera. Or maybe "save era". Whatever.
+Name "closha" is a combination of "clone" and a Russian feminine hypocorism.

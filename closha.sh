@@ -5,79 +5,62 @@ shopt -s nullglob
 
 declare -a configFiles
 declare -a bupDirs
+declare -a inputs
 declare -a inputCommands
 declare -a inputResults
 declare -i keepVersions
 
 #$1 = config file
 function readConfig() {
-   echo "config file $1"
-   local state="bupDir" # bupDir | inputCommand | inputResult
+   local state="default" # default | inputCommand
    
    while IFS=" = " read k v; do
-      if ! [[ "$v" == "" ]]; then
-         echo "Processing: [[[$k | $v]]]"
+      if [[ "$v" == "" ]]; then
+         continue
+      fi
+      echo "Processing: [[[$k | $v]]]"
+      
+      if [[ $state == "inputCommand" ]]; then
+         if [[ "$k" == "inputResult" ]]; then
+            inputResults+=("${v/#\~/$HOME}")
+            state="default"
+         else
+            echo 
+         fi
+      else
          case $k in
-         "output") case $state in
-            "bupDir")
-               bupDirs+=("${v/#\~/$HOME}") # expand leading tilde
-               ;;
-            *)
-               echo "Key 'output' unexpected. Outputs must come before inputs"
-               exit 1
-               ;;
-            esac;;
-         "inputCommand") case $state in
-            "inputResult") ;& #fallthrough
-            "bupDir") 
-               inputCommands+=("${v/#\~/$HOME}")
-               state="inputCommand"
-               ;; 
-            *) 
-               echo "Key 'inputCommand', but expected 'inputResult = '"
-               exit 1
-               ;; 
-            esac;;
-         "inputResult") case $state in
-            "inputCommand")
-               inputResults+=("${v/#\~/$HOME}")
-               state="inputResult"
-               ;;
-            *)
-               echo "Key 'inputResult', but expected 'inputCommand = '"
-               exit 1
-               ;;
-            esac;;
+         "output")
+            bupDirs+=("${v/#\~/$HOME}") # expand leading tilde
+            ;;
+         "input")
+            inputs+=("${v/#\~/$HOME}")
+            ;;
+         "inputCommand")
+            inputCommands+=("${v/#\~/$HOME}")
+            state="inputCommand"
+            ;;
          "keepVersions")
             (( keepVersions = (v > 1) ? v : 1 ))
             ;;
          *)
             echo "Unknown key '$k'."
-            echo " Expected one of: output, keepVersions, inputCommand, inputResult"
+            echo "Expected one of: output, input, inputCommand,"
+            echo "inputResult (only after inputCommand!), keepVersions."
             exit 1
             ;;
          esac
-      fi 
+      fi
    done < "$1"
    
-   if (( "${#bupDirs[@]}" == 0)) then
-      echo "Empty array!"
+   if (( "${#inputs[@]}" + "${#inputCommands[@]}" == 0)) then
+      echo "Empty inputs! Nothing to backup!"
       exit 1
    fi
-   if (( "${#inputCommands[@]}" == 0)) then
-      echo "Empty input commands!"
-      exit 1
-   fi
-   if (("${#inputResults[@]}" == 0)) then
-      echo "Empty input results!"
-      exit 1
-   fi
-   
    if (("${#inputCommands[@]}" != "${#inputResults[@]}")) then
       echo "The number of commands should match number of outputs" # Should be unreachable
       exit 1
    fi
-   if ! [[ $state == "inputResult" ]]; then
+   if [[ $state == "inputCommand" ]]; then
       echo "Expected 'inputResult = ' after 'inputCommand'!"
       exit 1 
    fi
@@ -170,10 +153,10 @@ function makeABackup() {
 function makeBackups() {
    keepVersions=$((3))
    
-   readarray -t configFiles < <(ls -A $HOME/.config/saveera 2>/dev/null)
+   readarray -t configFiles < <(ls -A $HOME/.config/closha 2>/dev/null)
    
    for cFile in "${configFiles[@]}"; do
-      readConfig "$HOME/.config/saveera/$cFile"
+      readConfig "$HOME/.config/closha/$cFile"
    done
    
    echo "bupDirs:"

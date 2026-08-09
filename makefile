@@ -28,7 +28,7 @@ LDFLAGS ?= -Wl,--exclude-libs=ALL
 BIN ?= ../bin
 OBJDIR ?= ../.b
 
-APP=saveera.sh
+APP=closha.sh
 
 
 #}}}
@@ -49,7 +49,7 @@ all: | $(BIN) ##Build the program
 
 
 dist: | $(OBJDIR)/$(APP) ##Create a tarball with the source code
-/ tar --exclude .git -c saveera.sh makefile -f $(OBJDIR)/$(APP)/$(APP).tar.gz
+/ tar --exclude .git -c closha.sh makefile -f $(OBJDIR)/$(APP)/$(APP).tar.gz
 
 install: ##Copy it into a location for runnable binaries
 / mkdir -p $(DESTDIR)/$(PREFIX)/bin
