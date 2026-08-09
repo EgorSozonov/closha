@@ -22,7 +22,7 @@ verification!
 Create one or more files in ~/.config/saveera with the following structure:
 
 
-> output = /home/foo
+> output = ~/backups
 > keepVersions = 4
 > inputCommand = tar -I 'xz 9' --exclude .git -c \
 >    ~/repos/myRepo -f ~/.local/share/saveera/myRepo.tar.xz
@@ -30,13 +30,14 @@ Create one or more files in ~/.config/saveera with the following structure:
  
 
 Place the script within your path and run it. The script will run the command you've written in 
-`inputCommand` and expect the file you've named in `inputResult`; this file will be renamed to
+`inputCommand` and expect the file you've named in `inputResult`; this file will be moved to
 something like 
 
-   myRepo.tar.xz.123.bak
+    ~/backups/myRepo.tar.xz.123.bak
 
 its SHA-256 checksum will be saved as 
-   myRepo.tar.xz.123.sha256
+
+    ~/backups/myRepo.tar.xz.123.sha256
 
 and an older backup myRepo.tar.xz.119.{bak,sha256}, if it exists, will be deleted. The id is an 
 ever-incrementing integer starting at 0.
@@ -45,14 +46,21 @@ The script checks if the new file happens to have the same size and content as p
 and avoids superfluous overwriting if that's true. All outputs are checked separately.
 
 You can have multiple inputs and multiple outputs (each input will be backed up to every output).
+You can also have multiple config files and they will all be executed.
+
+To copy an already-existing file, use ":" as the command.
 
 To restore a backup, run it as 
 
-   saveera ~/.local/share/saveera/myRepo.tar.xz.123.bak
+   saveera ~/backups/myRepo.tar.xz.123.bak
    
-And it will validate the checksum and copy that file to  ~/.local/share/saveera/myRepo.tar.xz
+And it will validate the checksum and copy that file to  
 
-But the most beautiful feature is autobacking up to plugged in USB sticks. Just create the dir
+    ~/.local/share/saveera/myRepo.tar.xz
+    
+(the same place it got it from when making the backup).
+
+But the most beautiful feature is auto backing up to plugged in USB sticks. Just create the dir
 "saveera" at the toplevel of your stick and plug it in (no need to mount!). Better yet, have 3 or
 more of such USB sticks plugged in. The script will auto-mount them, check for presence of the dir
 and back up all inputs to all of the sticks simultaneously. This will be a simple RAID array for 
