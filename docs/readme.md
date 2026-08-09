@@ -1,6 +1,8 @@
 ** UNDER CONSTRUCTION **
 
-Saveera (named after a word play on the verb "to save") is a script for local-only backups.
+### Saveera
+
+Saveera  is a script for local-only backups.
 
 Features:
 
@@ -48,11 +50,11 @@ and avoids superfluous overwriting if that's true. All outputs are checked separ
 You can have multiple inputs and multiple outputs (each input will be backed up to every output).
 You can also have multiple config files and they will all be executed.
 
-To copy an already-existing file, use ":" as the command.
+To copy an already-existing file, use ":" as the command (it does nothing).
 
 To restore a backup, run it as 
 
-   saveera ~/backups/myRepo.tar.xz.123.bak
+   saveera.sh ~/backups/myRepo.tar.xz.123.bak
    
 And it will validate the checksum and copy that file to  
 
@@ -66,3 +68,12 @@ more of such USB sticks plugged in. The script will auto-mount them, check for p
 and back up all inputs to all of the sticks simultaneously. This will be a simple RAID array for 
 your data to ensure its integrity, all with just one command.
 
+
+### Examples
+
+Look in the docs/examples directory for examples of config files. These go into ~/.config/saveera.
+
+
+### Name
+
+Named after a word play on the verb "to save" and Bagheera. Or maybe "save era". Whatever.

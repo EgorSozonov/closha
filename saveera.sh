@@ -1,12 +1,17 @@
 #! /usr/bin/bash
 
+shopt -s extglob
+shopt -s nullglob
+
 declare -a configFiles
 declare -a bupDirs
 declare -a inputCommands
 declare -a inputResults
 declare -i keepVersions
 
+#$1 = config file
 function readConfig() {
+   echo "config file $1"
    local state="bupDir" # bupDir | inputCommand | inputResult
    
    while IFS=" = " read k v; do
@@ -15,7 +20,7 @@ function readConfig() {
          case $k in
          "output") case $state in
             "bupDir")
-               bupDirs+=("$v")
+               bupDirs+=("${v/#\~/$HOME}") # expand leading tilde
                ;;
             *)
                echo "Key 'output' unexpected. Outputs must come before inputs"
@@ -25,7 +30,7 @@ function readConfig() {
          "inputCommand") case $state in
             "inputResult") ;& #fallthrough
             "bupDir") 
-               inputCommands+=("$v")
+               inputCommands+=("${v/#\~/$HOME}")
                state="inputCommand"
                ;; 
             *) 
@@ -35,7 +40,7 @@ function readConfig() {
             esac;;
          "inputResult") case $state in
             "inputCommand")
-               inputResults+=("$v")
+               inputResults+=("${v/#\~/$HOME}")
                state="inputResult"
                ;;
             *)
@@ -51,7 +56,8 @@ function readConfig() {
             echo " Expected one of: output, keepVersions, inputCommand, inputResult"
             exit 1
             ;;
-         esac;;
+         esac
+      fi 
    done < "$1"
    
    if (( "${#bupDirs[@]}" == 0)) then
@@ -82,14 +88,20 @@ function readConfig() {
 function getEarliestAndLatestVersions() {
    local -n minId=$3
    local -n maxId=$4
-   declare -a existingBackups
+   echo ""
+   echo "Getting ids from $2/$1.*.bak"
    
-   readarray -t existingBackups < <(ls -A "$2/$1.*.bak" 2>/dev/null)
+   #declare -a existingBackups
+   #readarray -t existingBackups < <(ls -A "$2/$1.*.bak" 2>/dev/null)
+   existingBackups=( $2/$1.*.bak )
+   
+   echo "got ${#existingBackups[@]} existing backups"
    ((maxId = -1))
    
    for fn in "${existingBackups[@]}"; do
-      if [[ $fn =~ "$1.([0-9]+).bak"  ]]; then
-         local bId = (( "${BASH_REMATCH[1]}" ))
+      if [[ "$fn" =~ $2/$1.([0-9]+).bak ]]; then
+         local bId=$(( "${BASH_REMATCH[1]}" ))
+         echo "encountered backup $bid"
          if (( bId < minId )) then
             ((minId = bId))
          elif (( bId > maxId )) then  
@@ -99,35 +111,69 @@ function getEarliestAndLatestVersions() {
    done
 }
 
-#$1
-function makeABackup() {
-   declare -i minId
-   declare -i maxId
-   getEarliestAndLatestVersions $inpRes $output minId maxId
-   local newId=$(( maxId + 1 ))
-   echo "minId $minId max $maxId newId $newId"
-   if (( maxId != -1 )) then
-      #check if the file changed since last backup
+#$1 = existing backup. $2 = new backup. $3 = OUT 1 iff they differ
+function checkIfFilesDiffer() {
+   declare -n out=$3
+   local szOld=$(stat -c %s $1)
+   local szNew=$(stat -c %s $2)
+   
+   if (( szOld != szNew )) then
+      ((out = 1))
+      return 0
+   elif ! cmp -s $1 $2; then
+      ((out = 1))
+      return 0
    fi
-   local newName="$output/$inpShort.$newId.bak"
+   ((out = 0))
+}
+
+#$1 user command. $2 inpResult $3 inpShort $4 out
+function makeABackup() {
+   declare -i minBId
+   declare -i maxBId
+   
+   $1 #Run user command to (hopefully) create the inpRes file 
+   
+   if ! [[ -f "$2" ]]; then
+      echo "Expected a file to back up but can't find it!"
+      echo "|| $2 ||"
+      exit 1
+   fi
+   
+   getEarliestAndLatestVersions $3 $4 minBId maxBId
+   local newId=$(( maxBId + 1 ))
+   echo "minId $minId max $maxId newId $newId"
+   
+   declare -i filesDiffer
+   checkIfFilesDiffer $2 "$4/$3.$maxId.bak" filesDiffer
+   if (( filesDiffer == 0)) then
+      return 0
+   fi
+   
+   local newName="$4/$inpShort.$newId.bak"
    local newChecksumName="$output/$inpShort.$newId.sha256"
    cp $inpRes $newName
    
-   origChecksum=$(sha256sum $inpRes)
-   newChecksum=$(sha256sum $newName)
+   origChecksumAndFname="$(sha256sum $2)"
+   newChecksumAndFname="$(sha256sum $newName)"
+   origChecksum="${origChecksumAndFname:0:64}"
+   newChecksum="${newChecksumAndFname:0:64}"
    if [[ "$newChecksum" != "$origChecksum" ]]; then
-   
+      echo "Error when copying file "
+      echo "$2"
+      echo "to $4"
+      echo "Orig checksum $origChecksum, new checksum $newChacksum"
    fi
-   sha256sum $newName > $newChecksumName
+   echo "$newChecksumAndFname" > "$newChecksumName"
 }
 
 function makeBackups() {
-   keepVersions=((3))
+   keepVersions=$((3))
    
-   readarray -t configFiles < <(ls -A ~/.config/saveera 2>/dev/null)
+   readarray -t configFiles < <(ls -A $HOME/.config/saveera 2>/dev/null)
    
    for cFile in "${configFiles[@]}"; do
-      readConfig "~/.config/saveera/$cFile"
+      readConfig "$HOME/.config/saveera/$cFile"
    done
    
    echo "bupDirs:"
@@ -146,20 +192,13 @@ function makeBackups() {
    done
    
    
-   for ((i=0; i<= "${inputCommands[@]}"; i++)) do
-      local comm="${inputCommands[$i]}"
-      local inpRes="${inputResults[$i]}"
+   for ((i=0; i< "${#inputCommands[@]}"; i++)) do
+      local comm="${inputCommands[i]}"
+      local inpRes="${inputResults[i]}"
       local inpShort="${inpRes##*/}"
-      $(comm) #Run command to (hopefully) create the inpRes file 
-      
-      if [[ ! -f $inpRes ]]; then
-         echo "Expected a file to back up but can't find it!"
-         echo "$inpRes"
-         exit 1
-      fi
       
       for output in "${bupDirs[@]}"; do
-         echo "$output"
+         makeABackup $comm $inpRes $inpShort $output
       done
    done
 }
@@ -169,7 +208,7 @@ function restoreFromBackup() {
 # get checksum from  file
 # calculate checksum from $1
 # if not same, display error
-
+   echo "restoring"
 }
 
 function main() {
@@ -178,8 +217,6 @@ function main() {
    else
       restoreFromBackup $1
    fi
-
-   
 }
 
 main
