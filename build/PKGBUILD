@@ -5,11 +5,11 @@ pkgbase=closha
 pkgname=(closha)
 pkgver=_
 pkgrel=1
-pkgdesc='Local file backup tool' 
+pkgdesc='Local file backup tool that also handles arrays of USB sticks' 
 arch=(x86_64)
 url='https://github.com/EgorSozonov/closha'
 license=(BSD-3-Clause)
-depends=(coreutils tar) 
+depends=(coreutils tar jq util-linux opendoas) 
 makedepends=(git)
 source=(git+https://github.com/EgorSozonov/closha#tag=$pkgver)
 options=(!debug !strip)
