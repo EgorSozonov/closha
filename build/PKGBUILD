@@ -9,7 +9,7 @@ pkgdesc='Local file backup tool'
 arch=(x86_64)
 url='https://github.com/EgorSozonov/closha'
 license=(BSD-3-Clause)
-depends=(coreutils) 
+depends=(coreutils tar) 
 makedepends=(git)
 source=(git+https://github.com/EgorSozonov/closha#tag=$pkgver)
 options=(!debug !strip)

@@ -89,7 +89,7 @@ And it will validate the checksum and copy that file to
     
 (i.e. to the backup directory).
 
-Also the script detects if it's an archive (supported extensions are .tar.{zst,gz,xz,bzip2}) and
+Also the script detects if it's an archive (supported extensions are .tar.{zst,gz,xz}) and
 unpacks it in the same dir if true (while deleting the archive).
 
 

@@ -17,8 +17,10 @@ declare -a inputResults
 declare -i keepVersions
 ### ### ### ### ### #### ### ### ### ### ### ### ###
 
+#Read a single config file and fill the arrays of inputs&outputs
 #$1 = config file
 function readConfig() {
+   echo "Processing config file: $1"
    local state="default" # default | inputCommand
    bupDirs=()
    inputs=()
@@ -29,7 +31,6 @@ function readConfig() {
       if [[ "$v" == "" ]]; then
          continue
       fi
-      echo "Processing: [[[$k | $v]]]"
       
       if [[ $state == "inputCommand" ]]; then
          if [[ "$k" == "inputResult" ]]; then
@@ -51,7 +52,7 @@ function readConfig() {
             state="inputCommand"
             ;;
          "keepVersions")
-            (( keepVersions = (v > 1) ? v : 1 ))
+            (( keepVersions = (v > 0) ? v : 1 ))
             ;;
          *)
             echo "Unknown key '$k'."
@@ -77,6 +78,7 @@ function readConfig() {
    fi
 }
 
+#Get all the existing backup ids of a file, and calculate the maximum among them
 #$1 = short file name without the ".123.bak" suffix. $2 = output dir. 
 #$3 = OUT array of existing ids, $4 = OUT max backup id
 function getAllAndLatestVersions() {
@@ -90,7 +92,7 @@ function getAllAndLatestVersions() {
    for fn in "${existingBackups[@]}"; do
       if [[ "$fn" =~ $2/$1.([0-9]+).bak ]]; then
          local bId=$(( "${BASH_REMATCH[1]}" ))
-         existing+=(bId)
+         existing+=($bId)
          
          if (( bId > maxId )) then  
             ((maxId = bId))
@@ -99,6 +101,7 @@ function getAllAndLatestVersions() {
    done
 }
 
+#Check if the new backup is different from the latest existing backup.
 #$1 = existing backup. $2 = new backup. $3 = OUT 1 iff they differ
 function checkIfFilesDiffer() {
    declare -n out=$3
@@ -115,44 +118,68 @@ function checkIfFilesDiffer() {
    ((out = 0))
 }
 
-#$1 inpResult $2 inpShort $3 output
+#Check how many versions of a backup exist and if it's more than keepVersions, delete extra ones
+#$1 = existingVersions. $2 inpShort. $3 output
+function deleteExtraVersions() {
+   local -n existVers=$1
+   if (( "${#existVers[@]}" <= $keepVersions )) then
+      return 0
+   fi
+   declare -a sortedVersions  
+   readarray -t sortedVersions < <(printf '%s\n' "${existVers[@]}" | sort -n)
+   
+   local j
+   for (( j="${#existVers[@]}" - $keepVersions - 1; j>=0; j-- )); do
+      /usr/bin/rm $3/$2.${sortedVersions[j]}.bak
+      /usr/bin/rm $3/$2.${sortedVersions[j]}.sha256
+   done
+}
+
+#Create a new backup
+#$1 inpResult. $2 inpShort. $3 output
 function makeABackup() {
    if ! [[ -f "$1" ]]; then
       echo "Expected a file to back up but can't find it!"
-      echo "|| $1 ||"
-      exit 1
+      echo "||$1||"
+      return 1
    fi
    
    declare -i maxBId
    declare -a existingVersions
    getAllAndLatestVersions $2 $3 existingVersions maxBId
    local newId=$(( maxBId + 1 ))
-   echo "max $maxBId newId $newId"
    
    if (( maxBId >= 0)) then
       declare -i filesDiffer
       checkIfFilesDiffer $1 "$3/$2.$maxBId.bak" filesDiffer
       if (( filesDiffer == 0)) then
+         deleteExtraVersions existingVersions $2 $3
          return 0
       fi
    fi
    
+   #Actually copy the file to output dir and create&validate its checksum
    local newName="$3/$inpShort.$newId.bak"
    local newChecksumName="$output/$inpShort.$newId.sha256"
-   cp $inpRes $newName
+   /usr/bin/cp $1 $newName
+   existingVersions+=( $newId )
    
    origChecksumAndFname="$(sha256sum $1)"
    newChecksumAndFname="$(sha256sum $newName)"
    origChecksum="${origChecksumAndFname:0:64}"
    newChecksum="${newChecksumAndFname:0:64}"
    if [[ "$newChecksum" != "$origChecksum" ]]; then
-      echo "Error when copying file "
-      echo "$1"
-      echo "to $3"
+      echo "Checksum error when copying file "
+      echo "||$1||"
+      echo "to ||$3||"
+      return 1
    fi
    echo "$newChecksum" > "$newChecksumName"
+   
+   deleteExtraVersions existingVersions $2 $3
 }
 
+#Make all the backups configured in all the files in ~/.config/closha
 function makeBackups() {
    keepVersions=$((3))
    
@@ -160,63 +187,62 @@ function makeBackups() {
    
    for cFile in "${configFiles[@]}"; do
       readConfig "$HOME/.config/closha/$cFile"
-   done
-   
-   echo "bupDirs:"
-   for x in "${bupDirs[@]}"; do
-      echo "$x"
-   done
-
-   echo "inputCommands:"
-   for x in "${inputCommands[@]}"; do
-      echo "$x"
-   done
-
-   echo "inputResults:"
-   for x in "${inputResults[@]}"; do
-      echo "$x"
-   done
-   
-   #Ordinary inputs
-   for ((i=0; i< "${#inputs[@]}"; i++)) do
-      local input="${inputs[i]}"
-      local inpShort="${input##*/}"
       
-      for output in "${bupDirs[@]}"; do
-         makeABackup $input $inpShort $output
-      done
-   done
-   
-   #Inputs generated from commands
-   for ((i=0; i< "${#inputCommands[@]}"; i++)) do
-      local comm="${inputCommands[i]}"
-      local inpRes="${inputResults[i]}"
-      local inpShort="${inpRes##*/}"
-      
-      $1 #Run user command to (hopefully) create the inpRes file 
-      
-      for output in "${bupDirs[@]}"; do
-         makeABackup $inpRes $inpShort $output
+      #Ordinary inputs
+      declare -i i
+      for ((i=0; i<"${#inputs[@]}"; i++)); do
+         local input="${inputs[i]}"
+         local inpShort="${input##*/}"
+         for output in "${bupDirs[@]}"; do
+            makeABackup $input $inpShort $output
+         done
       done
       
-      if [[ -f "$inpRes" ]]; then
-         /usr/bin/rm "$inpRes"
-      fi
+      #Inputs generated from commands
+      for ((i=0; i< "${#inputCommands[@]}"; i++)) do
+         local comm="${inputCommands[i]}"
+         local inpRes="${inputResults[i]}"
+         local inpShort="${inpRes##*/}"
+         
+         $1 #Run user command to (hopefully) create the inpRes file 
+         
+         for output in "${bupDirs[@]}"; do
+            makeABackup $inpRes $inpShort $output
+         done
+         
+         if [[ -f "$inpRes" ]]; then
+            /usr/bin/rm "$inpRes"
+         fi
+      done
    done
 }
 
 #If the restored backup is an archive, unpacks it to a subdir and deletes the archive
 #$1 = backup file name
-function tryToUnpack() {
+function maybeUnpack() {
+   local bup="$1"
+   local extractTo=""
+   
+   if [[ "$bup" =~ .*\.tar\.gz || "$bup" =~ .*\.tar\.xz ]]; then
+      extractTo="${1:0:${#bup} - 7}"
+   elif [[ "$bup" =~ .*\.tar\.zst ]]; then
+      extractTo="${1:0:${#bup} - 8}"
+   elif [[ "$bup" =~ .*\.gz || "$bup" =~ .*\.xz ]]; then
+      extractTo="${1:0:${#bup} - 3}"
+   elif [[ "$bup" =~ .*\.zst ]]; then
+      extractTo="${1:0:${#bup} - 4}"
+   fi
+   
+   if [[ "extractTo" != "" ]]; then
+      mkdir "$extractTo"
+      /usr/bin/tar -x -f "$bup" -C "$extractTo"
+   fi
 }
 
+#Restore a single backup into the same dir. Unpack it into a subdir if it's a tarball
 #$1 = backup file name. $2 = restoration path
 function restoreFromBackup() {
-# get checksum from  file
-# calculate checksum from $1
-# if not same, display error
-   echo "restoring $1"
-   local bup="$1"
+   local bup=$(realpath "$1")
    if ! [[ -f $bup ]]; then
       echo "File doesn't exist or is a directory!"
       exit 1
@@ -242,14 +268,15 @@ function restoreFromBackup() {
       
       local restoredFname="${bup%.$bId.bak}"
       /usr/bin/cp "$bup" "$restoredFname"
+      
+      maybeUnpack "$restoredFname"
    else
       echo "The file name doesn't check out. It should end with a number like '.123.bak'"
       exit 1
    fi
 }
 
-
-#Main script
+#Main (entrypoint)
 if [[ "$1" == "" ]]; then
    makeBackups
 else
