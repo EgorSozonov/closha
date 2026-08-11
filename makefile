@@ -25,6 +25,7 @@ help: ##Show this help
 
 APP=closha.sh
 PREFIX ?= usr
+OBJDIR ?= ../.b
 
 #}}}
 #{{{ Commands
