@@ -1,13 +1,16 @@
 #! /usr/bin/bash
 app=$1
-vers=$2
-packDir=$(realpath $3)
+packDir=$(realpath $2)
+vers=$3
 
-echo "Version $vers"
-if [[ -z "$app" || -z "$vers" || -z "$packDir" ]]; then
-   echo "Must set application name and version and packaging dir! Example:"
-   echo "VERSION=1.0.0 make package"
+if [[ -z "$app" || -z "$packDir" ]]; then
+   echo "Must set application name and packaging dir! Examples:"
+   echo "build/package.sh package dir"
+   echo "build/package.sh package dir version"
    exit 1
+fi
+if [[ -z "$vers" ]]; then
+   vers=$(git describe --tags $(git rev-list --tags --max-count=1))
 fi
 
 #0. Generate destination dir
