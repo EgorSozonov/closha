@@ -1,4 +1,4 @@
-** UNDER CONSTRUCTION **
+** STATUS: ALPHA VERSION **
 
 ### Closha
 
@@ -12,14 +12,25 @@ Features:
 
 - saving and validating checksums to detect bitrot;
 
-- configuring how many last versions of a backup to keep;
+- configuring how many versions of a backup to keep;
 
 - autoreplicating to plugged in USB sticks that have a "closha" directory in root;
 
-- a compact, well-commented pure Bash implementation that is easy to audit: no foul play going on.
+- a compact (< 400 lines), well-commented pure Bash implementation that is easy to audit.
 
 All of that without registration, cloud fees, AI, leaking your data to corporations or age 
 verification!
+
+
+#### Installation
+
+    doas make install
+    
+To uninstall, run "doas make uninstall".
+
+To make an Arch Linux package, run
+
+    make package
 
 
 #### Example
