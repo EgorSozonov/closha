@@ -13,7 +13,6 @@ fi
 #0. Generate destination dir
 original="$(pwd)"
 dest="$packDir/$app-$vers"
-
 /usr/bin/rm -rf "$dest"
 /usr/bin/mkdir -p "$dest"
 
@@ -23,7 +22,7 @@ git -c core.abbrev=no -C "$pwd" archive --format tar "$vers" > $theTarball
 checksum=$(sha256sum $theTarball | awk '{print $1}')
 
 #2. We use a PKGBUILD with the local source to build the package, and generate a PKGBUILD
-##with the original source to have something to upload to AUR etc.
+#with the original source to have something to upload to AUR etc.
 
 #AWK programs to replace checksum etc in the PKGBUILD
 read -r -d '' localSourceSubst <<EOF
