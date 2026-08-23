@@ -23,7 +23,7 @@ help: ##Show this help
 
 .PHONY: all install uninstall package help
 
-APP=closha.sh
+APP=closha
 PREFIX ?= usr
 OBJDIR ?= ../.b
 
@@ -32,7 +32,7 @@ OBJDIR ?= ../.b
 
 install: ##Copy it into a location for runnable binaries
 / mkdir -p $(DESTDIR)/$(PREFIX)/bin
-/ install -D ./$(APP) $(DESTDIR)/$(PREFIX)/bin/$(APP)
+/ install -m 755 -D ./$(APP) $(DESTDIR)/$(PREFIX)/bin/$(APP)
 
 uninstall: ##Uninstall the program
 / /usr/bin/rm $(DESTDIR)/$(PREFIX)/bin/$(APP)

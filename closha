@@ -189,6 +189,14 @@ function makeBackups() {
    
    readarray -t configFiles < <(ls -A $HOME/.config/closha 2>/dev/null)
    
+   if [[ ${#configFiles[@]} == 0 ]]; then
+      echo "No config files in $HOME/.config/closha, nothing to do!"
+      exit 1
+   fi
+   
+   echo -e "\e[92mClosha is starting to clone files\e[0m"
+   echo ""
+   
    for cFile in "${configFiles[@]}"; do
       readConfig "$HOME/.config/closha/$cFile"
       
@@ -362,8 +370,8 @@ if [[ "$1" == "" ]]; then
    makeBackups
    backupToSticks
    deleteGeneratedInputs
-   echo "Finished backing up!"
    echo ""
+   echo -e "\e[92mClosha finished cloning files\e[0m"
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
    displayHelp
 else
