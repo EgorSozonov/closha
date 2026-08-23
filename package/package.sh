@@ -5,8 +5,8 @@ vers=$3
 
 if [[ -z "$app" || -z "$packDir" ]]; then
    echo "Must set application name and packaging dir! Examples:"
-   echo "build/package.sh package dir"
-   echo "build/package.sh package dir version"
+   echo "package/package.sh package dir"
+   echo "package/package.sh package dir version"
    exit 1
 fi
 if [[ -z "$vers" ]]; then
@@ -43,12 +43,12 @@ gsub(/sha256sums=\([^)]+\)/, "sha256sums=('$checksum')");
 }1
 EOF
 
-awk -v RS='^$' -v ORS='' "$localSourceSubst" build/PKGBUILD > $dest/PKGBUILD
+awk -v RS='^$' -v ORS='' "$localSourceSubst" package/PKGBUILD > $dest/PKGBUILD
 
 #3. Actually build the package 
 (cd $dest \
    && makepkg \
    && /usr/bin/rm tarball.tar \
-   && awk -v RS='^$' -v ORS='' "$globalSourceSubst" "$original/build/PKGBUILD" > $dest/PKGBUILD \
+   && awk -v RS='^$' -v ORS='' "$globalSourceSubst" "$original/package/PKGBUILD" > $dest/PKGBUILD \
    && echo "Version $vers Arch package built in $dest" \
    || echo "ERROR")
