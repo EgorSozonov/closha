@@ -1,7 +1,7 @@
 # Maintainer: Egor Sozonov
 # Contributor: Egor Sozonov
 
-pkgname=(closha)
+pkgname=closha
 pkgver=_
 pkgrel=1
 pkgdesc='Local file backup tool that also handles arrays of USB sticks' 
@@ -10,11 +10,11 @@ url='https://github.com/EgorSozonov/closha'
 license=(BSD-3-Clause)
 depends=(coreutils tar jq util-linux opendoas) 
 makedepends=(git)
-source=(git+https://github.com/EgorSozonov/closha#tag=$pkgver)
+source=(git+https://github.com/EgorSozonov/$pkgname#tag=$pkgver)
 options=(!debug !strip)
 sha256sums=('SKIP')
 
 package() {
-   install -D closha.sh "$pkgdir/usr/bin/closha.sh"
+   install -m 755 -D $pkgname "$pkgdir/usr/bin/$pkgname"
 }
 
