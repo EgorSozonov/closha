@@ -39,6 +39,6 @@ uninstall: ##Uninstall the program
 
 
 package: ##Create a package for Arch Linux by building a specific version
-/ build/package.sh closha $(OBJDIR) $(VERSION)
+/ package/package.sh $(APP) $(OBJDIR) $(VERSION)
 
 #}}}
