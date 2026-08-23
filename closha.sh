@@ -37,7 +37,8 @@ function readConfig() {
       
       if [[ $state == "inputCommand" ]]; then
          if [[ "$k" == "inputResult" ]]; then
-            inputResults+=("${v/#\~/$HOME}")
+            eval local vv="$v" #expand the ~ or other env vars in the string
+            inputResults+=("$vv")
             state="default"
          else
             echo 
@@ -45,14 +46,16 @@ function readConfig() {
       else
          case $k in
          "output")
-            bupDirs+=("${v/#\~/$HOME}") #expand leading tilde to the home dir
-            ;;
-         "input")
-            inputs+=("${v/#\~/$HOME}")
+            eval local vv="$v"
+            bupDirs+=("$vv")
             ;;
          "inputCommand")
-            inputCommands+=("${v/#\~/$HOME}")
+            inputCommands+=("$v")
             state="inputCommand"
+            ;;
+         "input")
+            eval local vv="$v"
+            inputs+=("$vv")
             ;;
          "keepVersions")
             (( keepVersions = (v > 0) ? v : 1 ))
@@ -75,6 +78,7 @@ function readConfig() {
       echo "The number of commands should match number of outputs" #Should be unreachable
       exit 1
    fi
+   
    if [[ $state == "inputCommand" ]]; then
       echo "Expected 'inputResult = ' after 'inputCommand'!"
       exit 1 
@@ -207,7 +211,7 @@ function makeBackups() {
          local comm="${inputCommands[i]}"
          local inpRes="${inputResults[i]}"
          
-         $1 #Run user command to (hopefully) create the inpRes file 
+         eval "$comm" #Run user command to (hopefully) create the inpRes file 
          
          if [[ -f "$inpRes" ]]; then
             generatedInputs+=("$inpRes")
@@ -215,7 +219,7 @@ function makeBackups() {
                backAFileUp $inpRes $output
             done
          else 
-            echo "Expected a file to back up but can't find it!"
+            echo "Expected the command to produce a file to back up, but none was found!"
             echo "||$inpRes||"
          fi
       done
@@ -310,9 +314,9 @@ function backupToSticks() {
       | select(.[].children[0].mountpoints | length == 0) | map("/dev/" + .children[0].name).[]')
       
    for um in "${unmounted[@]}"; do
-      echo "Backin' up to $um" 
+      echo "Backin' up to unmounted $um" 
       local stickPath="/mnt/closhaStick"
-      doas /usr/bin/mount -o sync --mkdir "$um" "$stickPath"
+      doas /usr/bin/mount -o noatime,sync --mkdir "$um" "$stickPath"
       copyToStick $stickPath
       doas /usr/bin/umount "$stickPath"
    done
@@ -358,6 +362,8 @@ if [[ "$1" == "" ]]; then
    makeBackups
    backupToSticks
    deleteGeneratedInputs
+   echo "Finished backing up!"
+   echo ""
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
    displayHelp
 else

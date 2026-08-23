@@ -1,7 +1,6 @@
 # Maintainer: Egor Sozonov
 # Contributor: Egor Sozonov
 
-pkgbase=closha
 pkgname=(closha)
 pkgver=_
 pkgrel=1

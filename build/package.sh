@@ -10,7 +10,7 @@ if [[ -z "$app" || -z "$packDir" ]]; then
    exit 1
 fi
 if [[ -z "$vers" ]]; then
-   vers=$(git describe --tags $(git rev-list --tags --max-count=1))
+   vers=$(git describe --tags --abbrev=0 trunk)
 fi
 
 #0. Generate destination dir
