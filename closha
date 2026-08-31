@@ -194,7 +194,7 @@ function backAFileUp() {
       echo "to ||$2||"
       return 1
    fi
-   echo "$newChecksum" > "$newChecksumName"
+   printf "%s" "$newChecksum" > "$newChecksumName"
    
    deleteExtraVersions existingVersions $inpShort $2
 }
