@@ -15,6 +15,14 @@ options=(!debug !strip)
 sha256sums=('SKIP')
 changelog="changelog.txt"
 
+check() {
+   local exeVersion="$(closha -v | grep -oE '[0-9]+')"
+   if [[ "$exeVersion" != "$pkgver" ]]; then
+      error "The program has version $exeVersion but the package's version = $pkgver"
+      exit 1
+   fi
+}
+
 package() {
    make install DESTDIR=$pkgdir PREFIX=/usr
 }
