@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Closha
+Comment=A simple but capable tool for backing files up to local disk and USB sticks
+Exec=foot -e sh -c /usr/bin/closha
+Icon=/usr/share/icons/hicolor/scalable/apps/closha.svg
+Terminal=false
+Categories=System

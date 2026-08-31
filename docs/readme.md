@@ -21,6 +21,8 @@ Features:
 All of that without registration, cloud fees, AI, leaking your data to corporations or age 
 verification!
 
+![Closha](./package/logo.svg)
+
 
 #### Installation
 

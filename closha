@@ -19,6 +19,11 @@ declare -a generatedInputsAll
 #How many versions of a backup to keep
 declare -i keepVersions
 
+declare -i inputCnt # number of inputs that were found and participated in backing up
+declare -i nonexistentCnt # number of inputs that weren't found
+declare -i outputCnt # total number of copies (with checksums) made
+declare -i deletedCnt
+
 ######### ### ### #### ### ### #########
 
 #Read a single config file and fill the arrays of inputs&outputs
@@ -60,6 +65,7 @@ function readConfig() {
             if [[ -f "$vv" ]]; then
                configInputs+=("$vv")
                inputsAll+=("$vv")
+               ((inputCnt++))
             else
                echo "Input doesn't exist!"
                echo "||$vv||"
@@ -148,6 +154,7 @@ function deleteExtraVersions() {
    for (( j="${#existVers[@]}" - $keepVersions - 1; j>=0; j-- )); do
       /usr/bin/rm $3/$2.${sortedVersions[j]}.bak
       /usr/bin/rm $3/$2.${sortedVersions[j]}.sha256
+      ((deletedCnt++))
    done
 }
 
@@ -175,6 +182,7 @@ function backAFileUp() {
    local newChecksumName="$2/$inpShort.$newId.sha256"
    /usr/bin/cp $1 $newName
    existingVersions+=( $newId )
+   ((outputCnt++))
    
    origChecksumAndFname="$(sha256sum $1)"
    newChecksumAndFname="$(sha256sum $newName)"
@@ -231,6 +239,7 @@ function makeBackups() {
          
          if [[ -f "$inpRes" ]]; then
             generatedInputsAll+=("$inpRes")
+            ((inputCnt++))
             for output in "${bupDirs[@]}"; do
                backAFileUp $inpRes $output
             done
@@ -261,6 +270,7 @@ function maybeUnpack() {
    if [[ "$extractTo" != "" ]]; then
       mkdir "$extractTo"
       /usr/bin/tar -x -f "$bup" -C "$extractTo"
+      echo "Extracted archive to $extractTo"
    fi
 }
 
@@ -293,6 +303,7 @@ function restoreFromBackup() {
       
       local restoredFname="${bup%.$bId.bak}"
       /usr/bin/cp "$bup" "$restoredFname"
+      echo "Restored the backup to $restoredFname"
       
       maybeUnpack "$restoredFname"
    else
@@ -379,9 +390,25 @@ if [[ "$1" == "" ]]; then
    backupToSticks
    deleteGeneratedInputs
    echo ""
+   
+   if (( inputCnt > 0 )) then
+      echo -e "Found $inputCnt inputs"
+   fi
+   if (( outputCnt > 0 )) then
+      echo -e "Made $outputCnt file copies"
+   fi
+   if (( deletedCnt > 0 )) then
+      echo -e "Deleted $deletedCnt old versions"
+   fi
+   if (( nonexistentCnt > 0 )) then
+      echo -e "ERROR: $nonexistentCnt inputs were not found!"
+   fi
    echo -e "\e[92mClosha finished cloning files\e[0m"
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
    displayHelp
+elif [[ "$1" == "-v" || "$1" == "--verbose" ]]; then
+   echo "closha version 0.9.0"
+   echo "(file backup utility, run closha -h to see how to use it)"
 else
    restorePath="$HOME/.local/share/closha/"
    mkdir -p "$restorePath"

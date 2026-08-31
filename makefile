@@ -33,9 +33,18 @@ OBJDIR ?= ../.b
 install: ##Copy it into a location for runnable binaries
 / mkdir -p $(DESTDIR)/$(PREFIX)/bin
 / install -m 755 -D ./$(APP) $(DESTDIR)/$(PREFIX)/bin/$(APP)
+/ install -m 644 -D package/$(APP).svg \
+   $(DESTDIR)/$(PREFIX)/share/icons/hicolor/scalable/apps/$(APP).svg
+/ install -m 644 -D package/$(APP)32x32.png \
+   $(DESTDIR)/$(PREFIX)/share/icons/hicolor/32x32/apps/$(APP).png
+/ install -m 644 -D package/$(APP).desktop \
+   $(DESTDIR)/$(PREFIX)/share/applications/$(APP).desktop
 
 uninstall: ##Uninstall the program
 / /usr/bin/rm $(DESTDIR)/$(PREFIX)/bin/$(APP)
+/ /usr/bin/rm $(DESTDIR)/$(PREFIX)/share/icons/hicolor/scalable/apps/$(APP).svg
+/ /usr/bin/rm $(DESTDIR)/$(PREFIX)/share/icons/hicolor/32x32/apps/$(APP).png
+/ /usr/bin/rm $(DESTDIR)/$(PREFIX)/share/applications/$(APP).desktop
 
 
 package: ##Create a package for Arch Linux by building a specific version

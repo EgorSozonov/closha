@@ -15,6 +15,7 @@ options=(!debug !strip)
 sha256sums=('SKIP')
 
 package() {
-   install -m 755 -D $pkgname "$pkgdir/usr/bin/$pkgname"
+   #install -m 755 -D $pkgname "$pkgdir/usr/bin/$pkgname"
+   make install DESTDIR=$pkgdir PREFIX=/usr
 }
 
