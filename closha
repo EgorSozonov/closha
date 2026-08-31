@@ -407,7 +407,7 @@ if [[ "$1" == "" ]]; then
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
    displayHelp
 elif [[ "$1" == "-v" || "$1" == "--verbose" ]]; then
-   echo "closha version 0.9.0"
+   echo "closha version 2"
    echo "(file backup utility, run closha -h to see how to use it)"
 else
    restorePath="$HOME/.local/share/closha/"

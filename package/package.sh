@@ -44,6 +44,7 @@ gsub(/sha256sums=\([^)]+\)/, "sha256sums=('$checksum')");
 EOF
 
 awk -v RS='^$' -v ORS='' "$localSourceSubst" package/PKGBUILD > $dest/PKGBUILD
+cp package/changelog.txt $dest/changelog.txt
 
 #3. Actually build the package 
 (cd $dest \
