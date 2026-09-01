@@ -6,7 +6,7 @@ pkgver=_
 pkgrel=1
 pkgdesc='Local file backup tool that also handles arrays of USB sticks' 
 arch=(x86_64)
-url='https://github.com/EgorSozonov/closha'
+url='https://github.com/EgorSozonov/$pkgname'
 license=(BSD-3-Clause)
 depends=(coreutils tar jq util-linux opendoas) 
 makedepends=(git)
@@ -16,7 +16,7 @@ sha256sums=('SKIP')
 changelog="changelog.txt"
 
 check() {
-   local exeVersion="$(closha -v | grep -oE '[0-9]+')"
+   local exeVersion="$($srcdir/closha -v | grep -oE '[0-9]+')"
    if [[ "$exeVersion" != "$pkgver" ]]; then
       error "The program has version $exeVersion but the package's version = $pkgver"
       exit 1
